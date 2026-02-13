@@ -12,7 +12,7 @@ use crate::ast::{
 use crate::lexer::Span;
 
 use super::builtins::BuiltinRegistry;
-use super::value::{Environment, LemonFunction, RuntimeError, Value};
+use super::value::{Environment, ErrorKind, LemonFunction, RuntimeError, Value};
 
 /// The Lemon interpreter
 pub struct Interpreter {
@@ -550,10 +550,15 @@ impl Interpreter {
                     if !cond.is_truthy() {
                         break;
                     }
-                    let result = self.eval_block(body)?;
-                    // Handle break/continue would go here
-                    if let Value::Err(_) = result {
-                        return Ok(result);
+                    match self.eval_block(body) {
+                        Ok(_) => {}
+                        Err(e) if e.kind == ErrorKind::Break => {
+                            return Ok(e.value.map(|v| *v).unwrap_or(Value::Unit));
+                        }
+                        Err(e) if e.kind == ErrorKind::Continue => {
+                            continue;
+                        }
+                        Err(e) => return Err(e),
                     }
                 }
                 Ok(Value::Unit)
@@ -561,10 +566,15 @@ impl Interpreter {
 
             Expr::Loop { body, .. } => {
                 loop {
-                    let result = self.eval_block(body)?;
-                    // Handle break would go here - for now just loop forever
-                    if let Value::Err(_) = result {
-                        return Ok(result);
+                    match self.eval_block(body) {
+                        Ok(_) => {}
+                        Err(e) if e.kind == ErrorKind::Break => {
+                            return Ok(e.value.map(|v| *v).unwrap_or(Value::Unit));
+                        }
+                        Err(e) if e.kind == ErrorKind::Continue => {
+                            continue;
+                        }
+                        Err(e) => return Err(e),
                     }
                 }
             }
@@ -586,13 +596,23 @@ impl Interpreter {
                             self.env = Rc::new(RefCell::new(Environment::with_parent(old_env.clone())));
 
                             self.bind_pattern(pattern, item)?;
-                            let result = self.eval_block(body)?;
+                            match self.eval_block(body) {
+                                Ok(_) => {}
+                                Err(e) if e.kind == ErrorKind::Break => {
+                                    self.env = old_env;
+                                    return Ok(e.value.map(|v| *v).unwrap_or(Value::Unit));
+                                }
+                                Err(e) if e.kind == ErrorKind::Continue => {
+                                    self.env = old_env;
+                                    continue;
+                                }
+                                Err(e) => {
+                                    self.env = old_env;
+                                    return Err(e);
+                                }
+                            }
 
                             self.env = old_env;
-
-                            if let Value::Err(_) = result {
-                                return Ok(result);
-                            }
                         }
                         Ok(Value::Unit)
                     }
@@ -602,13 +622,23 @@ impl Interpreter {
                             self.env = Rc::new(RefCell::new(Environment::with_parent(old_env.clone())));
 
                             self.bind_pattern(pattern, Value::String(ch.to_string()))?;
-                            let result = self.eval_block(body)?;
+                            match self.eval_block(body) {
+                                Ok(_) => {}
+                                Err(e) if e.kind == ErrorKind::Break => {
+                                    self.env = old_env;
+                                    return Ok(e.value.map(|v| *v).unwrap_or(Value::Unit));
+                                }
+                                Err(e) if e.kind == ErrorKind::Continue => {
+                                    self.env = old_env;
+                                    continue;
+                                }
+                                Err(e) => {
+                                    self.env = old_env;
+                                    return Err(e);
+                                }
+                            }
 
                             self.env = old_env;
-
-                            if let Value::Err(_) = result {
-                                return Ok(result);
-                            }
                         }
                         Ok(Value::Unit)
                     }
@@ -625,24 +655,20 @@ impl Interpreter {
                 } else {
                     Value::Unit
                 };
-                // Use a special return marker - for now just return the value
-                // A proper implementation would use a Result type to propagate returns
-                Ok(val)
+                Err(RuntimeError::return_signal(val))
             }
 
             Expr::Break { value, .. } => {
-                let _val = if let Some(v) = value {
+                let val = if let Some(v) = value {
                     self.eval_expr(v)?
                 } else {
                     Value::Unit
                 };
-                // TODO: Proper break handling
-                Err(RuntimeError::new("break outside of loop"))
+                Err(RuntimeError::break_signal(val))
             }
 
             Expr::Continue { .. } => {
-                // TODO: Proper continue handling
-                Err(RuntimeError::new("continue outside of loop"))
+                Err(RuntimeError::continue_signal())
             }
 
             Expr::Assign { target, value, .. } => {
@@ -1381,7 +1407,13 @@ impl Interpreter {
                 }
 
                 // Execute body
-                let result = self.eval_expr(&func.body);
+                let result = match self.eval_expr(&func.body) {
+                    Ok(val) => Ok(val),
+                    Err(e) if e.kind == ErrorKind::Return => {
+                        Ok(e.value.map(|v| *v).unwrap_or(Value::Unit))
+                    }
+                    Err(e) => Err(e),
+                };
 
                 // Restore environment
                 self.env = old_env;
@@ -1416,7 +1448,13 @@ impl Interpreter {
         }
 
         // Execute body
-        let result = self.eval_expr(&func.body);
+        let result = match self.eval_expr(&func.body) {
+            Ok(val) => Ok(val),
+            Err(e) if e.kind == ErrorKind::Return => {
+                Ok(e.value.map(|v| *v).unwrap_or(Value::Unit))
+            }
+            Err(e) => Err(e),
+        };
 
         // Restore environment
         self.env = old_env;

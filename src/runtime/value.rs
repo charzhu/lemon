@@ -317,16 +317,58 @@ impl fmt::Debug for Value {
     }
 }
 
-/// Runtime error
+/// Control flow signal kind
+#[derive(Debug, Clone, PartialEq)]
+pub enum ErrorKind {
+    /// A real runtime error
+    Error,
+    /// break [value] inside a loop
+    Break,
+    /// continue inside a loop
+    Continue,
+    /// return [value] from a function
+    Return,
+}
+
+/// Runtime error (also used for control flow signals)
 #[derive(Debug, Clone)]
 pub struct RuntimeError {
     pub message: String,
+    pub kind: ErrorKind,
+    /// Optional value carried by break/return
+    pub value: Option<Box<Value>>,
 }
 
 impl RuntimeError {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
+            kind: ErrorKind::Error,
+            value: None,
+        }
+    }
+
+    pub fn break_signal(value: Value) -> Self {
+        Self {
+            message: "break".into(),
+            kind: ErrorKind::Break,
+            value: Some(Box::new(value)),
+        }
+    }
+
+    pub fn continue_signal() -> Self {
+        Self {
+            message: "continue".into(),
+            kind: ErrorKind::Continue,
+            value: None,
+        }
+    }
+
+    pub fn return_signal(value: Value) -> Self {
+        Self {
+            message: "return".into(),
+            kind: ErrorKind::Return,
+            value: Some(Box::new(value)),
         }
     }
 

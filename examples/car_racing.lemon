@@ -1,0 +1,315 @@
+// Car Racing Game in Lemon
+// Use arrow keys to steer, avoid obstacles, collect fuel
+// Press ESC to quit, Space to restart after game over
+
+use lemon::ui;
+
+// Layout constants
+let SCREEN_W = 640;
+let SCREEN_H = 480;
+let ROAD_LEFT = 160;
+let ROAD_RIGHT = 480;
+let ROAD_W = 320;
+let LANE_W = 80;
+let CAR_W = 40;
+let CAR_H = 60;
+let FUEL_SIZE = 20;
+let NUM_OBSTACLES = 4;
+
+// AABB collision check
+fn collides(ax: Int, ay: Int, aw: Int, ah: Int,
+            bx: Int, by: Int, bw: Int, bh: Int) -> Bool {
+    if ax + aw <= bx { return false; }
+    if ax >= bx + bw { return false; }
+    if ay + ah <= by { return false; }
+    if ay >= by + bh { return false; }
+    return true;
+}
+
+// Draw the player car
+fn draw_player(window: Window, x: Int, y: Int) {
+    let body_color = ui::rgb(0, 120, 255);
+    let accent_color = ui::rgb(0, 80, 200);
+    let glass_color = ui::rgb(150, 200, 255);
+    // Body
+    ui::rect(window, x, y, CAR_W, CAR_H, body_color);
+    // Roof
+    ui::rect(window, x + 4, y + 10, CAR_W - 8, 20, accent_color);
+    // Windshield
+    ui::rect(window, x + 8, y + 4, CAR_W - 16, 12, glass_color);
+    // Wheels
+    ui::rect(window, x - 4, y + 4, 6, 14, ui::BLACK);
+    ui::rect(window, x - 4, y + CAR_H - 18, 6, 14, ui::BLACK);
+    ui::rect(window, x + CAR_W - 2, y + 4, 6, 14, ui::BLACK);
+    ui::rect(window, x + CAR_W - 2, y + CAR_H - 18, 6, 14, ui::BLACK);
+}
+
+// Draw an obstacle car
+fn draw_obstacle(window: Window, x: Int, y: Int) {
+    let body_color = ui::rgb(220, 30, 30);
+    let accent_color = ui::rgb(170, 20, 20);
+    let glass_color = ui::rgb(150, 200, 255);
+    // Body
+    ui::rect(window, x, y, CAR_W, CAR_H, body_color);
+    // Roof
+    ui::rect(window, x + 4, y + 10, CAR_W - 8, 20, accent_color);
+    // Windshield
+    ui::rect(window, x + 8, y + 4, CAR_W - 16, 12, glass_color);
+    // Wheels
+    ui::rect(window, x - 4, y + 4, 6, 14, ui::BLACK);
+    ui::rect(window, x - 4, y + CAR_H - 18, 6, 14, ui::BLACK);
+    ui::rect(window, x + CAR_W - 2, y + 4, 6, 14, ui::BLACK);
+    ui::rect(window, x + CAR_W - 2, y + CAR_H - 18, 6, 14, ui::BLACK);
+}
+
+// Draw a fuel pickup
+fn draw_fuel_item(window: Window, x: Int, y: Int) {
+    let yellow = ui::rgb(255, 200, 0);
+    ui::rect(window, x, y, FUEL_SIZE, FUEL_SIZE, yellow);
+    ui::rect(window, x + 6, y + 4, 8, 12, ui::BLACK);
+}
+
+fn main() {
+    println("=== CAR RACING ===");
+    println("Controls: Left/Right to steer, Up/Down for speed, ESC to quit");
+    println("");
+
+    let result = ui::create(SCREEN_W, SCREEN_H, "Lemon Car Racing");
+    match result {
+        Ok(window) => {
+            run_game(window);
+        },
+        Err(e) => {
+            println("Failed to create window:");
+            println(e);
+        }
+    }
+}
+
+fn run_game(window: Window) {
+    // Colors
+    let grass_color = ui::rgb(34, 139, 34);
+    let road_color = ui::rgb(60, 60, 60);
+    let line_color = ui::rgb(255, 255, 200);
+    let hud_bg = ui::rgb(30, 30, 30);
+    let fuel_bar_bg = ui::rgb(80, 80, 80);
+    let fuel_yellow = ui::rgb(255, 200, 0);
+    let red_color = ui::rgb(220, 30, 30);
+
+    // Player state
+    let player_x = 300;
+    let player_y = 380;
+
+    // Game state
+    let speed = 3;
+    let score = 0;
+    let fuel = 100;
+    let game_over = false;
+    let road_offset = 0;
+    let frame = 0;
+
+    // Obstacle positions (4 obstacles: x and y arrays)
+    let obs_x = [250, 350, 200, 400];
+    let obs_y = [-100, -300, -500, -700];
+
+    // Fuel pickup position
+    let fuel_x = [300];
+    let fuel_y = [-400];
+
+    while ui::is_open(window) {
+        if game_over {
+            // Game over screen
+            ui::clear(window, ui::BLACK);
+            ui::rect(window, SCREEN_W / 2 - 120, SCREEN_H / 2 - 40, 240, 80, hud_bg);
+            ui::rect(window, SCREEN_W / 2 - 118, SCREEN_H / 2 - 38, 236, 76, red_color);
+
+            // Score display as bars
+            let score_bars = score / 200;
+            let sb = 0;
+            while sb < score_bars {
+                if sb >= 40 {
+                    break;
+                }
+                ui::rect(window, SCREEN_W / 2 - 100 + sb * 5, SCREEN_H / 2 - 10, 4, 20, fuel_yellow);
+                sb = sb + 1;
+            }
+
+            ui::update(window);
+
+            if ui::key_down(window, "escape") {
+                break;
+            }
+            if ui::key_down(window, "space") {
+                // Reset game
+                player_x = 300;
+                player_y = 380;
+                speed = 3;
+                score = 0;
+                fuel = 100;
+                game_over = false;
+                road_offset = 0;
+                frame = 0;
+                obs_y[0] = -100;
+                obs_y[1] = -300;
+                obs_y[2] = -500;
+                obs_y[3] = -700;
+                obs_x[0] = 250;
+                obs_x[1] = 350;
+                obs_x[2] = 200;
+                obs_x[3] = 400;
+                fuel_y[0] = -400;
+                fuel_x[0] = 300;
+            }
+            continue;
+        }
+
+        // --- Input ---
+        if ui::key_down(window, "left") {
+            player_x = player_x - 4;
+        }
+        if ui::key_down(window, "right") {
+            player_x = player_x + 4;
+        }
+        if ui::key_down(window, "up") {
+            if speed < 10 {
+                speed = speed + 1;
+            }
+        }
+        if ui::key_down(window, "down") {
+            if speed > 1 {
+                speed = speed - 1;
+            }
+        }
+        if ui::key_down(window, "escape") {
+            break;
+        }
+
+        // Clamp player to road
+        if player_x < ROAD_LEFT + 5 {
+            player_x = ROAD_LEFT + 5;
+        }
+        if player_x + CAR_W > ROAD_RIGHT - 5 {
+            player_x = ROAD_RIGHT - 5 - CAR_W;
+        }
+
+        // --- Update ---
+        road_offset = (road_offset + speed) % 40;
+        score = score + speed;
+        frame = frame + 1;
+
+        // Drain fuel (every 3 frames to slow the drain)
+        if frame % 3 == 0 {
+            fuel = fuel - 1;
+        }
+        if fuel <= 0 {
+            game_over = true;
+        }
+
+        // Move obstacles down
+        let i = 0;
+        while i < NUM_OBSTACLES {
+            obs_y[i] = obs_y[i] + speed;
+
+            // Recycle off-screen obstacles
+            if obs_y[i] > SCREEN_H {
+                obs_y[i] = 0 - CAR_H - random(50, 300);
+                obs_x[i] = ROAD_LEFT + 10 + random(0, ROAD_W - CAR_W - 20);
+            }
+
+            // Collision with player
+            if collides(player_x, player_y, CAR_W, CAR_H,
+                        obs_x[i], obs_y[i], CAR_W, CAR_H) {
+                game_over = true;
+            }
+
+            i = i + 1;
+        }
+
+        // Move fuel pickup down
+        fuel_y[0] = fuel_y[0] + speed;
+        if fuel_y[0] > SCREEN_H {
+            fuel_y[0] = 0 - FUEL_SIZE - random(200, 600);
+            fuel_x[0] = ROAD_LEFT + 20 + random(0, ROAD_W - 60);
+        }
+
+        // Fuel pickup collision
+        if collides(player_x, player_y, CAR_W, CAR_H,
+                    fuel_x[0], fuel_y[0], FUEL_SIZE, FUEL_SIZE) {
+            fuel = fuel + 30;
+            if fuel > 100 {
+                fuel = 100;
+            }
+            fuel_y[0] = 0 - FUEL_SIZE - random(300, 700);
+            fuel_x[0] = ROAD_LEFT + 20 + random(0, ROAD_W - 60);
+        }
+
+        // --- Draw ---
+        // Grass
+        ui::clear(window, grass_color);
+
+        // Road surface
+        ui::rect(window, ROAD_LEFT, 0, ROAD_W, SCREEN_H, road_color);
+
+        // Road edge lines
+        ui::rect(window, ROAD_LEFT, 0, 4, SCREEN_H, ui::WHITE);
+        ui::rect(window, ROAD_RIGHT - 4, 0, 4, SCREEN_H, ui::WHITE);
+
+        // Dashed lane dividers (scrolling)
+        let stripe_y = road_offset - 40;
+        while stripe_y < SCREEN_H {
+            ui::rect(window, ROAD_LEFT + LANE_W - 1, stripe_y, 2, 20, line_color);
+            ui::rect(window, ROAD_LEFT + LANE_W * 2 - 1, stripe_y, 2, 20, line_color);
+            ui::rect(window, ROAD_LEFT + LANE_W * 3 - 1, stripe_y, 2, 20, line_color);
+            stripe_y = stripe_y + 40;
+        }
+
+        // Draw fuel pickup
+        if fuel_y[0] >= 0 - FUEL_SIZE {
+            draw_fuel_item(window, fuel_x[0], fuel_y[0]);
+        }
+
+        // Draw obstacles
+        let oi = 0;
+        while oi < NUM_OBSTACLES {
+            if obs_y[oi] >= 0 - CAR_H {
+                draw_obstacle(window, obs_x[oi], obs_y[oi]);
+            }
+            oi = oi + 1;
+        }
+
+        // Draw player
+        draw_player(window, player_x, player_y);
+
+        // --- HUD ---
+        ui::rect(window, 0, 0, SCREEN_W, 30, hud_bg);
+
+        // Fuel bar
+        let fuel_bar_w = fuel * 2;
+        let fuel_color = ui::GREEN;
+        if fuel <= 30 {
+            fuel_color = red_color;
+        }
+        ui::rect(window, 10, 8, 200, 14, fuel_bar_bg);
+        ui::rect(window, 10, 8, fuel_bar_w, 14, fuel_color);
+
+        // Speed indicator (cyan bars on right)
+        let si = 0;
+        while si < speed {
+            ui::rect(window, SCREEN_W - 20 - si * 12, 8, 8, 14, ui::CYAN);
+            si = si + 1;
+        }
+
+        // Score indicator (yellow dots)
+        let score_dots = (score / 100) % 20;
+        let sd = 0;
+        while sd < score_dots {
+            ui::rect(window, 220 + sd * 10, 12, 6, 6, fuel_yellow);
+            sd = sd + 1;
+        }
+
+        ui::update(window);
+    }
+
+    println("Thanks for playing!");
+    println("Final Score: " + str(score));
+}
