@@ -1,0 +1,5 @@
+/target
+*.log
+server_output.txt
+nul
+.claude/

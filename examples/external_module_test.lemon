@@ -1,0 +1,12 @@
+// Test external module loading
+mod utils;
+
+fn main() {
+    println("Testing external module...");
+
+    utils::greet("World");
+
+    let sum = utils::add(10, 20);
+    println("10 + 20 = ");
+    println(sum);
+}

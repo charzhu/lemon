@@ -1,0 +1,23 @@
+use lemon::fs;
+
+fn main() {
+    // Write a file
+    let result = fs::write_string("test_output.txt", "Hello from Lemon!");
+    println(result);
+
+    // Check if it exists
+    println(fs::exists("test_output.txt"));
+
+    // Read it back
+    let content = fs::read_string("test_output.txt");
+    println(content);
+
+    // List current directory
+    let files = fs::list_dir(".");
+    println(files);
+
+    // Clean up
+    let removed = fs::remove("test_output.txt");
+    println(removed);
+    println(fs::exists("test_output.txt"));
+}

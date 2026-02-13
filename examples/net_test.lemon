@@ -1,0 +1,14 @@
+use lemon::net;
+use lemon::http;
+
+fn main() {
+    // Test DNS resolution
+    println("Testing DNS resolution...");
+    let result = net::resolve("localhost");
+    println(result);
+
+    // Test HTTP GET (will fail without a server, but tests the code path)
+    println("\nTesting HTTP GET...");
+    let http_result = http::get("http://example.com/");
+    println(http_result);
+}

@@ -1,0 +1,10 @@
+// Test static fields
+
+class Counter {
+    static count: int = 0,
+    value: int,
+
+    pub fn new() -> Self {
+        Self { value: 0 }
+    }
+}

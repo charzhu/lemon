@@ -1,0 +1,398 @@
+// Space Invaders - A classic arcade game in Lemon
+// Controls: Left/Right arrows to move, Space to shoot, Escape to quit
+
+use lemon::ui;
+
+// Game constants
+let WINDOW_WIDTH = 800;
+let WINDOW_HEIGHT = 600;
+let PLAYER_WIDTH = 60;
+let PLAYER_HEIGHT = 20;
+let PLAYER_SPEED = 6;
+let BULLET_SPEED = 8;
+let BULLET_WIDTH = 4;
+let BULLET_HEIGHT = 12;
+let ALIEN_WIDTH = 40;
+let ALIEN_HEIGHT = 30;
+let ALIEN_COLS = 8;
+let ALIEN_ROWS = 4;
+let ALIEN_SPACING_X = 60;
+let ALIEN_SPACING_Y = 50;
+let ALIEN_START_X = 80;
+let ALIEN_START_Y = 60;
+let BOMB_SPEED = 4;
+let BOMB_WIDTH = 6;
+let BOMB_HEIGHT = 14;
+
+fn main() {
+    println("=== SPACE INVADERS ===");
+    println("Controls: Left/Right to move, Space to shoot, ESC to quit");
+    println("");
+
+    let result = ui::create(WINDOW_WIDTH, WINDOW_HEIGHT, "Space Invaders");
+
+    match result {
+        Ok(window) => {
+            run_game(window);
+        },
+        Err(e) => {
+            println("Failed to create window:");
+            println(e);
+        }
+    }
+}
+
+fn run_game(window: Window) {
+    // Player state
+    let player_x = WINDOW_WIDTH / 2 - PLAYER_WIDTH / 2;
+    let player_y = WINDOW_HEIGHT - 60;
+
+    // Game state
+    let score = 0;
+    let lives = 3;
+    let game_over = false;
+    let won = false;
+
+    // Bullets (array of [x, y] tuples stored as flat array: x1, y1, x2, y2, ...)
+    let bullets = [];
+
+    // Bombs (array of [x, y] tuples stored as flat array)
+    let bombs = [];
+
+    // Aliens: stored as [x, y, alive] for each alien
+    // We'll use a flat array: x1, y1, alive1, x2, y2, alive2, ...
+    let aliens = [];
+    let alien_count = ALIEN_COLS * ALIEN_ROWS;
+
+    // Initialize aliens grid
+    let row = 0;
+    while row < ALIEN_ROWS {
+        let col = 0;
+        while col < ALIEN_COLS {
+            let ax = ALIEN_START_X + col * ALIEN_SPACING_X;
+            let ay = ALIEN_START_Y + row * ALIEN_SPACING_Y;
+            aliens.push(ax);
+            aliens.push(ay);
+            aliens.push(1);  // alive = 1
+            col = col + 1;
+        }
+        row = row + 1;
+    }
+
+    // Alien movement
+    let alien_dir = 1;  // 1 = right, -1 = left
+    let alien_speed = 1;
+    let move_down = false;
+
+    // Shooting cooldown
+    let shoot_cooldown = 0;
+    let bomb_cooldown = 0;
+
+    // Frame counter for timing
+    let frame = 0;
+
+    println("Game started! Lives: 3");
+
+    while ui::is_open(window) {
+        if game_over {
+            // Show game over screen
+            ui::clear(window, ui::BLACK);
+            // Draw "GAME OVER" using rectangles
+            if won {
+                // Green for win
+                ui::rect(window, 300, 280, 200, 40, ui::GREEN);
+            } else {
+                // Red for loss
+                ui::rect(window, 300, 280, 200, 40, ui::RED);
+            }
+            ui::update(window);
+
+            if ui::key_down(window, "escape") {
+                break;
+            }
+            continue;
+        }
+
+        // Clear screen
+        ui::clear(window, ui::BLACK);
+
+        // Handle input
+        if ui::key_down(window, "left") {
+            player_x = player_x - PLAYER_SPEED;
+            if player_x < 0 {
+                player_x = 0;
+            }
+        }
+        if ui::key_down(window, "right") {
+            player_x = player_x + PLAYER_SPEED;
+            if player_x > WINDOW_WIDTH - PLAYER_WIDTH {
+                player_x = WINDOW_WIDTH - PLAYER_WIDTH;
+            }
+        }
+
+        // Shooting
+        if ui::key_down(window, "space") {
+            if shoot_cooldown <= 0 {
+                // Fire bullet from center of player
+                let bx = player_x + PLAYER_WIDTH / 2 - BULLET_WIDTH / 2;
+                let by = player_y - BULLET_HEIGHT;
+                bullets.push(bx);
+                bullets.push(by);
+                shoot_cooldown = 15;  // Cooldown frames
+            }
+        }
+        if shoot_cooldown > 0 {
+            shoot_cooldown = shoot_cooldown - 1;
+        }
+
+        // Escape to quit
+        if ui::key_down(window, "escape") {
+            break;
+        }
+
+        // Update bullets (move up)
+        let new_bullets = [];
+        let i = 0;
+        while i < len(bullets) {
+            let bx = bullets[i];
+            let by = bullets[i + 1] - BULLET_SPEED;
+
+            // Keep bullet if still on screen
+            if by > 0 {
+                new_bullets.push(bx);
+                new_bullets.push(by);
+            }
+            i = i + 2;
+        }
+        bullets = new_bullets;
+
+        // Check bullet-alien collisions
+        let surviving_bullets = [];
+        i = 0;
+        while i < len(bullets) {
+            let bx = bullets[i];
+            let by = bullets[i + 1];
+            let bullet_hit = false;
+
+            // Check each alien
+            let j = 0;
+            while j < len(aliens) {
+                let ax = aliens[j];
+                let ay = aliens[j + 1];
+                let alive = aliens[j + 2];
+
+                if alive == 1 {
+                    // Check collision
+                    if bx < ax + ALIEN_WIDTH {
+                        if bx + BULLET_WIDTH > ax {
+                            if by < ay + ALIEN_HEIGHT {
+                                if by + BULLET_HEIGHT > ay {
+                                    // Hit!
+                                    aliens[j + 2] = 0;  // Kill alien
+                                    bullet_hit = true;
+                                    score = score + 10;
+                                    alien_count = alien_count - 1;
+                                    // Speed up remaining aliens
+                                    if alien_count > 0 {
+                                        alien_speed = 1 + (ALIEN_COLS * ALIEN_ROWS - alien_count) / 8;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                j = j + 3;
+            }
+
+            if bullet_hit == false {
+                surviving_bullets.push(bx);
+                surviving_bullets.push(by);
+            }
+            i = i + 2;
+        }
+        bullets = surviving_bullets;
+
+        // Update aliens movement
+        let hit_edge = false;
+        i = 0;
+        while i < len(aliens) {
+            let ax = aliens[i];
+            let alive = aliens[i + 2];
+            if alive == 1 {
+                if alien_dir == 1 {
+                    if ax + ALIEN_WIDTH + alien_speed >= WINDOW_WIDTH - 20 {
+                        hit_edge = true;
+                    }
+                } else {
+                    if ax - alien_speed <= 20 {
+                        hit_edge = true;
+                    }
+                }
+            }
+            i = i + 3;
+        }
+
+        // Move aliens
+        if hit_edge {
+            alien_dir = -alien_dir;
+            // Move down
+            i = 0;
+            while i < len(aliens) {
+                aliens[i + 1] = aliens[i + 1] + 20;
+                // Check if aliens reached player
+                if aliens[i + 2] == 1 {
+                    if aliens[i + 1] + ALIEN_HEIGHT >= player_y {
+                        game_over = true;
+                        println("GAME OVER - Aliens reached you!");
+                        println("Final Score: " + str(score));
+                    }
+                }
+                i = i + 3;
+            }
+        } else {
+            i = 0;
+            while i < len(aliens) {
+                aliens[i] = aliens[i] + alien_dir * alien_speed;
+                i = i + 3;
+            }
+        }
+
+        // Alien bombs - random alien drops a bomb
+        if bomb_cooldown <= 0 {
+            // Find a random alive alien to drop bomb
+            let alive_aliens = [];
+            i = 0;
+            while i < len(aliens) {
+                if aliens[i + 2] == 1 {
+                    alive_aliens.push(i);
+                }
+                i = i + 3;
+            }
+
+            if len(alive_aliens) > 0 {
+                // Pick random alien
+                let rand_idx = random(0, len(alive_aliens) - 1);
+                let alien_idx = alive_aliens[rand_idx];
+                let bomb_x = aliens[alien_idx] + ALIEN_WIDTH / 2 - BOMB_WIDTH / 2;
+                let bomb_y = aliens[alien_idx + 1] + ALIEN_HEIGHT;
+                bombs.push(bomb_x);
+                bombs.push(bomb_y);
+                bomb_cooldown = 60 + random(0, 60);  // Random delay
+            }
+        }
+        if bomb_cooldown > 0 {
+            bomb_cooldown = bomb_cooldown - 1;
+        }
+
+        // Update bombs
+        let new_bombs = [];
+        i = 0;
+        while i < len(bombs) {
+            let bomb_x = bombs[i];
+            let bomb_y = bombs[i + 1] + BOMB_SPEED;
+
+            // Check collision with player
+            if bomb_x < player_x + PLAYER_WIDTH {
+                if bomb_x + BOMB_WIDTH > player_x {
+                    if bomb_y < player_y + PLAYER_HEIGHT {
+                        if bomb_y + BOMB_HEIGHT > player_y {
+                            // Player hit!
+                            lives = lives - 1;
+                            println("HIT! Lives remaining: " + str(lives));
+                            if lives <= 0 {
+                                game_over = true;
+                                println("GAME OVER!");
+                                println("Final Score: " + str(score));
+                            }
+                            // Don't keep this bomb
+                            i = i + 2;
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            // Keep bomb if still on screen
+            if bomb_y < WINDOW_HEIGHT {
+                new_bombs.push(bomb_x);
+                new_bombs.push(bomb_y);
+            }
+            i = i + 2;
+        }
+        bombs = new_bombs;
+
+        // Check win condition
+        if alien_count <= 0 {
+            game_over = true;
+            won = true;
+            println("YOU WIN!");
+            println("Final Score: " + str(score));
+        }
+
+        // Draw player (green ship)
+        ui::rect(window, player_x, player_y, PLAYER_WIDTH, PLAYER_HEIGHT, ui::GREEN);
+        // Draw player cannon
+        ui::rect(window, player_x + PLAYER_WIDTH / 2 - 4, player_y - 10, 8, 10, ui::GREEN);
+
+        // Draw bullets (yellow)
+        i = 0;
+        while i < len(bullets) {
+            ui::rect(window, bullets[i], bullets[i + 1], BULLET_WIDTH, BULLET_HEIGHT, ui::YELLOW);
+            i = i + 2;
+        }
+
+        // Draw aliens
+        i = 0;
+        while i < len(aliens) {
+            if aliens[i + 2] == 1 {
+                let ax = aliens[i];
+                let ay = aliens[i + 1];
+                // Draw alien body (different colors based on row)
+                let row_num = i / (ALIEN_COLS * 3);
+                let color = ui::RED;
+                if row_num == 1 {
+                    color = ui::MAGENTA;
+                }
+                if row_num == 2 {
+                    color = ui::CYAN;
+                }
+                if row_num == 3 {
+                    color = ui::BLUE;
+                }
+                ui::rect(window, ax, ay, ALIEN_WIDTH, ALIEN_HEIGHT, color);
+                // Draw alien "eyes"
+                ui::rect(window, ax + 8, ay + 8, 8, 8, ui::WHITE);
+                ui::rect(window, ax + ALIEN_WIDTH - 16, ay + 8, 8, 8, ui::WHITE);
+            }
+            i = i + 3;
+        }
+
+        // Draw bombs (red)
+        i = 0;
+        while i < len(bombs) {
+            ui::rect(window, bombs[i], bombs[i + 1], BOMB_WIDTH, BOMB_HEIGHT, ui::RED);
+            i = i + 2;
+        }
+
+        // Draw lives indicator (top left)
+        i = 0;
+        while i < lives {
+            ui::rect(window, 20 + i * 25, 10, 20, 10, ui::GREEN);
+            i = i + 1;
+        }
+
+        // Draw score bar (top right) - simple bar visualization
+        let score_bar_width = score / 2;
+        if score_bar_width > 200 {
+            score_bar_width = 200;
+        }
+        ui::rect(window, WINDOW_WIDTH - 220, 10, score_bar_width, 10, ui::YELLOW);
+
+        // Update display
+        ui::update(window);
+
+        frame = frame + 1;
+    }
+
+    println("Thanks for playing!");
+}

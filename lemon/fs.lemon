@@ -1,0 +1,67 @@
+// Lemon Standard Library - File System Module
+// lemon.fs - File system operations
+
+pub fn read_string(path) {
+    _fs_read_string(path)
+}
+
+pub fn write_string(path, content) {
+    _fs_write_string(path, content)
+}
+
+pub fn read_bytes(path) {
+    _fs_read_bytes(path)
+}
+
+pub fn write_bytes(path, data) {
+    _fs_write_bytes(path, data)
+}
+
+pub fn exists(path) {
+    _fs_exists(path)
+}
+
+pub fn is_file(path) {
+    _fs_is_file(path)
+}
+
+pub fn is_dir(path) {
+    _fs_is_dir(path)
+}
+
+pub fn remove(path) {
+    _fs_remove(path)
+}
+
+pub fn mkdir(path) {
+    _fs_mkdir(path)
+}
+
+pub fn list_dir(path) {
+    _fs_list_dir(path)
+}
+
+pub fn copy(src, dst) {
+    _fs_copy(src, dst)
+}
+
+pub fn rename(src, dst) {
+    _fs_rename(src, dst)
+}
+
+pub fn cwd() {
+    _fs_cwd()
+}
+
+pub fn absolute(path) {
+    _fs_absolute(path)
+}
+
+// Append content to a file (implemented in Lemon)
+pub fn append(path, content) {
+    let existing = match read_string(path) {
+        Ok(s) => s,
+        Err(_) => ""
+    };
+    write_string(path, existing + content)
+}

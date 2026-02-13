@@ -1,0 +1,44 @@
+// Lemon Standard Library - Core Prelude
+// This module is auto-imported into all Lemon programs
+
+// I/O functions
+pub fn print(value: Any) {
+    _print(value)
+}
+
+pub fn println(value: Any) {
+    _println(value)
+}
+
+pub fn eprint(value: Any) {
+    _eprint(value)
+}
+
+pub fn eprintln(value: Any) {
+    _eprintln(value)
+}
+
+pub fn input(prompt: String) -> String {
+    _input(prompt)
+}
+
+// Utility functions
+pub fn len(value: Any) -> Int {
+    _len(value)
+}
+
+pub fn str(value: Any) -> String {
+    _to_string(value)
+}
+
+pub fn int(value: Any) -> Int {
+    _to_int(value)
+}
+
+pub fn float(value: Any) -> Float {
+    _to_float(value)
+}
+
+pub fn type_of(value: Any) -> String {
+    _type_of(value)
+}

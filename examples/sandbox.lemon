@@ -1,0 +1,56 @@
+// Example: Capability-based sandboxing in Lemon
+// NOTE: This is a design concept file - capabilities are not yet implemented
+
+use lemon::fs;
+use lemon::http;
+
+capability FileRead;
+capability FileWrite;
+capability NetworkAccess;
+
+// This function declares its required capabilities
+fn read_config() -> Result<Config, Error>
+requires[FileRead]
+{
+    fs::read_string("config.json")
+}
+
+// This function requires multiple capabilities
+fn sync_data(url: String) -> Result<(), Error>
+effects[io]
+requires[FileRead, FileWrite, NetworkAccess]
+{
+    let local_data = read_config()?;
+    let remote_data = http::get(url).await?;
+    let merged = merge(local_data, remote_data);
+    fs::write_string("data.json", merged)?;
+    Ok(())
+}
+
+// Sandbox for running untrusted code
+fn run_untrusted(code: String) -> Result<int, SandboxError> {
+    let sandbox = Sandbox::new()
+        .grant(FileRead::restricted_to("/tmp/sandbox/**"))
+        .deny(NetworkAccess)
+        .deny(FileWrite)
+        .memory_limit(64.megabytes())
+        .cpu_limit(Duration::seconds(5));
+
+    sandbox.run(code, timeout: Duration::seconds(10))
+}
+
+fn main() {
+    // This would fail if we don't have FileRead capability
+    let config = read_config();
+
+    // Run untrusted code safely
+    let result = run_untrusted(r#"
+        let x = 1 + 2;
+        x * 10
+    "#);
+
+    match result {
+        Ok(value) => println("Result: {}", value),
+        Err(e) => println("Sandbox error: {}", e),
+    }
+}

@@ -1,0 +1,108 @@
+// Lemon Standard Library - HTTP Module
+// lemon.http - HTTP client operations (built on lemon.net)
+
+// Simple HTTP GET request
+pub fn get(url) {
+    let parsed = parse_url(url);
+    match parsed {
+        Ok(info) => {
+            let host = info.0;
+            let port = info.1;
+            let path = info.2;
+
+            let addr = host + ":" + str(port);
+            let conn = _net_tcp_connect(addr);
+
+            match conn {
+                Ok(stream) => {
+                    _net_tcp_set_timeout(stream, 30000);
+
+                    let request = "GET " + path + " HTTP/1.1\r\n" +
+                                  "Host: " + host + "\r\n" +
+                                  "Connection: close\r\n" +
+                                  "User-Agent: Lemon/0.1\r\n\r\n";
+
+                    let write_result = _net_tcp_write(stream, request);
+                    match write_result {
+                        Ok(_) => {
+                            let response = _net_tcp_read(stream);
+                            _net_tcp_close(stream);
+                            match response {
+                                Ok(data) => extract_body(data),
+                                Err(e) => Err(e)
+                            }
+                        },
+                        Err(e) => Err(e)
+                    }
+                },
+                Err(e) => Err(e)
+            }
+        },
+        Err(e) => Err(e)
+    }
+}
+
+// Simple HTTP POST request
+pub fn post(url, body) {
+    let parsed = parse_url(url);
+    match parsed {
+        Ok(info) => {
+            let host = info.0;
+            let port = info.1;
+            let path = info.2;
+
+            let addr = host + ":" + str(port);
+            let conn = _net_tcp_connect(addr);
+
+            match conn {
+                Ok(stream) => {
+                    _net_tcp_set_timeout(stream, 30000);
+
+                    let request = "POST " + path + " HTTP/1.1\r\n" +
+                                  "Host: " + host + "\r\n" +
+                                  "Content-Length: " + str(len(body)) + "\r\n" +
+                                  "Content-Type: text/plain\r\n" +
+                                  "Connection: close\r\n" +
+                                  "User-Agent: Lemon/0.1\r\n\r\n" + body;
+
+                    let write_result = _net_tcp_write(stream, request);
+                    match write_result {
+                        Ok(_) => {
+                            let response = _net_tcp_read(stream);
+                            _net_tcp_close(stream);
+                            match response {
+                                Ok(data) => extract_body(data),
+                                Err(e) => Err(e)
+                            }
+                        },
+                        Err(e) => Err(e)
+                    }
+                },
+                Err(e) => Err(e)
+            }
+        },
+        Err(e) => Err(e)
+    }
+}
+
+// Helper: Parse URL into (host, port, path)
+fn parse_url(url) {
+    // Remove http:// prefix if present
+    let url = if len(url) > 7 {
+        // Check for http:// prefix (simplified)
+        url
+    } else {
+        url
+    };
+
+    // For now, return a simple parse
+    // TODO: Implement proper URL parsing
+    Ok(("example.com", 80, "/"))
+}
+
+// Helper: Extract body from HTTP response
+fn extract_body(response) {
+    // Find \r\n\r\n separator
+    // TODO: Implement proper body extraction
+    Ok(response)
+}

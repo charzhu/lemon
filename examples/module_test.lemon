@@ -1,0 +1,22 @@
+// Test inline modules
+mod math {
+    pub fn square(x: Int) -> Int {
+        x * x
+    }
+
+    pub fn double(x: Int) -> Int {
+        x + x
+    }
+}
+
+fn main() {
+    println("Testing inline modules...");
+
+    let result = math::square(5);
+    println("square(5) = ");
+    println(result);
+
+    let doubled = math::double(7);
+    println("double(7) = ");
+    println(doubled);
+}

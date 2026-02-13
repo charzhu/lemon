@@ -1,0 +1,1 @@
+fn countdown(n: int) -> int { if n <= 0 { 0 } else { countdown(n - 1) } } fn main() { println(countdown(5)); }

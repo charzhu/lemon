@@ -1,0 +1,165 @@
+// Example: Object-Oriented Programming in Lemon
+// Demonstrates classes, interfaces, inheritance, and delegation
+
+// Interface definition (like Java interfaces or Rust traits)
+interface Drawable {
+    fn draw(this, canvas: Canvas);
+
+    // Default implementation
+    fn bounds(this) -> Rect {
+        Rect::zero()
+    }
+}
+
+interface Clickable {
+    fn on_click(this, event: ClickEvent);
+}
+
+// Abstract base class
+abstract class Widget {
+    protected x: int;
+    protected y: int;
+    protected width: int;
+    protected height: int;
+
+    // Constructor
+    pub fn new(x: int, y: int, width: int, height: int) -> Self {
+        Self { x, y, width, height }
+    }
+
+    // Abstract method (must be overridden)
+    pub abstract fn render(this);
+
+    // Concrete method with default implementation
+    pub fn move_to(mut this, x: int, y: int) {
+        this.x = x;
+        this.y = y;
+    }
+
+    pub fn resize(mut this, width: int, height: int) {
+        this.width = width;
+        this.height = height;
+    }
+}
+
+// Concrete class extending Widget and implementing interfaces
+class Button extends Widget implements Drawable, Clickable {
+    label: String;
+    on_click_handler: fn();
+
+    // Constructor using super
+    pub fn new(x: int, y: int, label: String, handler: fn()) -> Self {
+        let base = super::new(x, y, 100, 30);
+        Self {
+            x: base.x,
+            y: base.y,
+            width: base.width,
+            height: base.height,
+            label,
+            on_click_handler: handler,
+        }
+    }
+
+    // Override abstract method
+    pub override fn render(this) {
+        println("Rendering button: {} at ({}, {})", this.label, this.x, this.y);
+    }
+
+    // Implement Drawable
+    pub fn draw(this, canvas: Canvas) {
+        canvas.draw_rect(this.x, this.y, this.width, this.height);
+        canvas.draw_text(this.label, this.x + 10, this.y + 15);
+    }
+
+    // Implement Clickable
+    pub fn on_click(this, event: ClickEvent) {
+        println("Button clicked: {}", this.label);
+        (this.on_click_handler)();
+    }
+}
+
+// Final class - cannot be extended
+final class Label extends Widget {
+    text: String;
+
+    pub fn new(x: int, y: int, text: String) -> Self {
+        Self {
+            x, y,
+            width: text.len() * 8,
+            height: 16,
+            text,
+        }
+    }
+
+    pub override fn render(this) {
+        println("Label: {}", this.text);
+    }
+
+    pub fn set_text(mut this, text: String) {
+        this.text = text;
+        this.width = text.len() * 8;
+    }
+}
+
+// Delegation pattern - forward methods to a delegate field
+class LoggingButton {
+    delegate inner: Button;  // Forwards Button methods automatically
+    logger: Logger;
+
+    pub fn new(button: Button, logger: Logger) -> Self {
+        Self { inner: button, logger }
+    }
+
+    // Override to add logging
+    pub fn on_click(this, event: ClickEvent) {
+        this.logger.log("Button click event received");
+        this.inner.on_click(event);
+        this.logger.log("Button click event handled");
+    }
+}
+
+// Static methods and class-level functionality
+class Counter {
+    static instance_count: int = 0;
+    value: int;
+
+    pub fn new() -> Self {
+        Counter::instance_count += 1;
+        Self { value: 0 }
+    }
+
+    static fn get_instance_count() -> int {
+        Counter::instance_count
+    }
+
+    pub fn increment(mut this) {
+        this.value += 1;
+    }
+
+    pub fn get(this) -> int {
+        this.value
+    }
+}
+
+fn main() {
+    // Create objects using new
+    let button = new Button(10, 20, "Click me", || {
+        println("Button was clicked!");
+    });
+
+    let label = new Label(10, 60, "Hello, Lemon!");
+
+    // Call methods
+    button.render();
+    label.render();
+
+    // Create logging wrapper using delegation
+    let logger = new Logger();
+    let logging_button = new LoggingButton(button, logger);
+
+    // Static method access
+    let counter = new Counter();
+    counter.increment();
+    println("Counter value: {}", counter.get());
+    println("Total counters created: {}", Counter::get_instance_count());
+}

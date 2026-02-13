@@ -1,0 +1,22 @@
+// Lemon Standard Library - I/O Module
+// lemon.io - Input/Output operations
+
+pub fn print(value) {
+    _print(value)
+}
+
+pub fn println(value) {
+    _println(value)
+}
+
+pub fn eprint(value) {
+    _eprint(value)
+}
+
+pub fn eprintln(value) {
+    _eprintln(value)
+}
+
+pub fn input(prompt) {
+    _input(prompt)
+}

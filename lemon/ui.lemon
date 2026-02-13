@@ -1,0 +1,70 @@
+// Lemon UI Module - Simple 2D Graphics
+// Provides window creation, shape drawing, colors, and input handling
+
+/// Create a new graphics window
+/// Returns Ok(Window) on success, Err(String) on failure
+pub fn create(width: Int, height: Int, title: String) -> Result<Window, String> {
+    _ui_create(width, height, title)
+}
+
+/// Check if the window is still open
+pub fn is_open(window: Window) -> Bool {
+    _ui_is_open(window)
+}
+
+/// Update the window display (swap buffer and handle events)
+pub fn update(window: Window) {
+    _ui_update(window)
+}
+
+/// Clear the window with a solid color
+pub fn clear(window: Window, color: Int) {
+    _ui_clear(window, color)
+}
+
+/// Draw a filled rectangle
+pub fn rect(window: Window, x: Int, y: Int, w: Int, h: Int, color: Int) {
+    _ui_rect(window, x, y, w, h, color)
+}
+
+/// Draw a filled circle
+pub fn circle(window: Window, cx: Int, cy: Int, r: Int, color: Int) {
+    _ui_circle(window, cx, cy, r, color)
+}
+
+/// Draw a line between two points
+pub fn line(window: Window, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
+    _ui_line(window, x1, y1, x2, y2, color)
+}
+
+/// Set a single pixel
+pub fn pixel(window: Window, x: Int, y: Int, color: Int) {
+    _ui_pixel(window, x, y, color)
+}
+
+/// Create an RGB color value
+/// Each component should be 0-255
+pub fn rgb(r: Int, g: Int, b: Int) -> Int {
+    _ui_rgb(r, g, b)
+}
+
+/// Check if a key is currently pressed
+/// Key names: "escape", "space", "enter", "up", "down", "left", "right", "a"-"z", "0"-"9"
+pub fn key_down(window: Window, key: String) -> Bool {
+    _ui_key_down(window, key)
+}
+
+/// Get the current mouse position as (x, y) tuple
+pub fn mouse_pos(window: Window) -> (Int, Int) {
+    _ui_mouse_pos(window)
+}
+
+// Common color constants
+pub let BLACK = 0x000000;
+pub let WHITE = 0xFFFFFF;
+pub let RED = 0xFF0000;
+pub let GREEN = 0x00FF00;
+pub let BLUE = 0x0000FF;
+pub let YELLOW = 0xFFFF00;
+pub let CYAN = 0x00FFFF;
+pub let MAGENTA = 0xFF00FF;

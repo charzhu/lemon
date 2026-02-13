@@ -1,0 +1,41 @@
+// Example: Schema types and validation in Lemon
+// NOTE: This is a design concept file - schema types and parse_json are not yet implemented
+
+// TODO: Add `use lemon::json;` when json module is implemented
+
+schema User {
+    @required
+    name: String,
+
+    @optional
+    @range(0, 150)
+    age: int,
+
+    @pattern("email-regex")
+    email: String,
+
+    tags: Vec<String>,
+}
+
+fn validate_user(data: String) -> Result<User, ValidationError>
+effects[io]
+requires[NetworkAccess]
+{
+    // TODO: parse_json will come from lemon.json module
+    let user: User = parse_json(data)?;
+
+    if user.age < 0 {
+        return Err(ValidationError::InvalidAge);
+    }
+
+    Ok(user)
+}
+
+fn main() {
+    let json = "{\"name\": \"Alice\", \"age\": 30}";
+
+    match validate_user(json) {
+        Ok(user) => println("Valid user: {}", user.name),
+        Err(e) => println("Validation failed: {}", e),
+    }
+}

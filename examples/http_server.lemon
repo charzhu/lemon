@@ -1,0 +1,20 @@
+use lemon::http;
+
+fn main() {
+    println("Starting simple HTTP server on port 8888...");
+    println("Send a request to http://localhost:8888/ to test");
+
+    // Wait for one HTTP request
+    let request = http::serve_once(8888);
+
+    match request {
+        Ok(info) => {
+            println("Received request:");
+            println(info);
+        },
+        Err(e) => {
+            println("Error:");
+            println(e);
+        }
+    }
+}

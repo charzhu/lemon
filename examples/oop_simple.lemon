@@ -1,0 +1,22 @@
+// Simple OOP example for testing parser
+
+interface Drawable {
+    fn draw(this);
+}
+
+class Button implements Drawable {
+    label: String;
+
+    pub fn new(label: String) -> Self {
+        Self { label }
+    }
+
+    pub fn draw(this) {
+        println("Drawing button: {}", this.label);
+    }
+}
+
+fn main() {
+    let button = new Button("Click me");
+    button.draw();
+}

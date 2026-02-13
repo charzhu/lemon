@@ -1,0 +1,9 @@
+// Utils module - external file
+pub fn greet(name: String) {
+    println("Hello, ");
+    println(name);
+}
+
+pub fn add(a: Int, b: Int) -> Int {
+    a + b
+}

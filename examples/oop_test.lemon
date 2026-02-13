@@ -1,0 +1,28 @@
+class Counter {
+    static instance_count: int = 0;
+    value: int;
+
+    pub fn new() -> Self {
+        Counter::instance_count += 1;
+        Self { value: 0 }
+    }
+
+    static fn get_instance_count() -> int {
+        Counter::instance_count
+    }
+
+    pub fn increment(mut this) {
+        this.value += 1;
+    }
+
+    pub fn get(this) -> int {
+        this.value
+    }
+}
+
+fn main() {
+    let counter = new Counter();
+    counter.increment();
+    println("Counter value: {}", counter.get());
+    println("Total counters created: {}", Counter::get_instance_count());
+}

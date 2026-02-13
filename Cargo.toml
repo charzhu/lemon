@@ -1,0 +1,42 @@
+[package]
+name = "lemon"
+version = "0.1.0"
+edition = "2024"
+description = "The Lemon programming language - AI-native, human-friendly"
+license = "MIT"
+
+[dependencies]
+# Lexer/Parser
+logos = "0.14"           # Fast lexer generator
+chumsky = "0.9"          # Parser combinator library
+
+# Error reporting
+ariadne = "0.4"          # Beautiful error messages
+thiserror = "1.0"        # Error derive macros
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Code generation (Phase 1: Cranelift)
+cranelift = "0.111"
+cranelift-module = "0.111"
+cranelift-jit = "0.111"
+target-lexicon = "0.12"
+
+# Utilities
+indexmap = "2.2"         # Ordered hash maps
+rustc-hash = "1.1"       # Fast hasher
+
+# UI/Graphics
+minifb = "0.25"          # Simple 2D graphics window
+
+[dev-dependencies]
+insta = "1.39"           # Snapshot testing
+
+[[bin]]
+name = "lemon"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1

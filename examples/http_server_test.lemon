@@ -1,0 +1,71 @@
+// Simple HTTP server test
+// Run with: lemon run examples/http_server_test.lemon
+
+use lemon::net;
+
+fn main() {
+    println("Starting HTTP server on port 8080...");
+
+    let listener = net::tcp_listen("127.0.0.1:8080");
+
+    match listener {
+        Ok(server) => {
+            println("Server listening on http://127.0.0.1:8080");
+            println("Press Ctrl+C to stop");
+            println("");
+
+            // Handle one request then exit (for testing)
+            let conn = net::tcp_accept(server);
+
+            match conn {
+                Ok(client) => {
+                    println("Client connected!");
+
+                    // Read the request
+                    let request = net::tcp_read(client);
+                    match request {
+                        Ok(data) => {
+                            println("Received request:");
+                            println(data);
+
+                            // Send HTTP response
+                            let body = "Hello from Lemon HTTP Server!";
+                            let response = "HTTP/1.1 200 OK\r\n" +
+                                          "Content-Type: text/plain\r\n" +
+                                          "Content-Length: " + str(len(body)) + "\r\n" +
+                                          "Connection: close\r\n" +
+                                          "\r\n" +
+                                          body;
+
+                            let write_result = net::tcp_write(client, response);
+                            match write_result {
+                                Ok(_) => println("Response sent!"),
+                                Err(e) => {
+                                    println("Failed to send response:");
+                                    println(e);
+                                }
+                            }
+                        },
+                        Err(e) => {
+                            println("Failed to read request:");
+                            println(e);
+                        }
+                    }
+
+                    net::tcp_close(client);
+                },
+                Err(e) => {
+                    println("Failed to accept connection:");
+                    println(e);
+                }
+            }
+
+            net::tcp_close(server);
+            println("Server stopped.");
+        },
+        Err(e) => {
+            println("Failed to start server:");
+            println(e);
+        }
+    }
+}

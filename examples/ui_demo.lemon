@@ -1,0 +1,94 @@
+// Lemon UI Demo - Simple 2D Graphics
+// Demonstrates window creation, shapes, colors, and input
+
+use lemon::ui;
+
+fn main() {
+    println("Creating graphics window...");
+
+    let result = ui::create(800, 600, "Lemon Graphics Demo");
+
+    match result {
+        Ok(window) => {
+            println("Window created! Press ESC to exit.");
+            run_demo(window);
+        },
+        Err(e) => {
+            println("Failed to create window:");
+            println(e);
+        }
+    }
+}
+
+fn run_demo(window: Window) {
+    let ball_x = 400;
+    let ball_y = 300;
+    let ball_dx = 3;
+    let ball_dy = 2;
+    let ball_radius = 20;
+
+    while ui::is_open(window) {
+        // Clear screen with dark gray
+        ui::clear(window, ui::rgb(30, 30, 30));
+
+        // Draw some static shapes
+        // Red rectangle in top-left
+        ui::rect(window, 50, 50, 100, 80, ui::RED);
+
+        // Green rectangle in top-right
+        ui::rect(window, 650, 50, 100, 80, ui::GREEN);
+
+        // Blue rectangle in bottom-left
+        ui::rect(window, 50, 470, 100, 80, ui::BLUE);
+
+        // Yellow rectangle in bottom-right
+        ui::rect(window, 650, 470, 100, 80, ui::YELLOW);
+
+        // Draw bouncing ball
+        ui::circle(window, ball_x, ball_y, ball_radius, ui::CYAN);
+
+        // Update ball position
+        ball_x = ball_x + ball_dx;
+        ball_y = ball_y + ball_dy;
+
+        // Bounce off walls
+        if ball_x <= ball_radius {
+            ball_x = ball_radius;
+            ball_dx = -ball_dx;
+        }
+        if ball_x >= 800 - ball_radius {
+            ball_x = 800 - ball_radius;
+            ball_dx = -ball_dx;
+        }
+        if ball_y <= ball_radius {
+            ball_y = ball_radius;
+            ball_dy = -ball_dy;
+        }
+        if ball_y >= 600 - ball_radius {
+            ball_y = 600 - ball_radius;
+            ball_dy = -ball_dy;
+        }
+
+        // Draw crosshair at mouse position
+        let (mx, my) = ui::mouse_pos(window);
+        ui::line(window, mx - 15, my, mx + 15, my, ui::WHITE);
+        ui::line(window, mx, my - 15, mx, my + 15, ui::WHITE);
+
+        // Draw border
+        ui::line(window, 0, 0, 799, 0, ui::MAGENTA);
+        ui::line(window, 799, 0, 799, 599, ui::MAGENTA);
+        ui::line(window, 799, 599, 0, 599, ui::MAGENTA);
+        ui::line(window, 0, 599, 0, 0, ui::MAGENTA);
+
+        // Update display
+        ui::update(window);
+
+        // Check for escape key
+        if ui::key_down(window, "escape") {
+            println("ESC pressed, closing window.");
+            break;
+        }
+    }
+
+    println("Demo finished!");
+}

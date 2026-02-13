@@ -1,0 +1,38 @@
+// Lemon Standard Library - Network Module
+// lemon.net - TCP networking operations
+
+pub fn tcp_listen(addr: String) -> Result<TcpListener, String> {
+    _net_tcp_listen(addr)
+}
+
+pub fn tcp_accept(listener: TcpListener) -> Result<TcpStream, String> {
+    _net_tcp_accept(listener)
+}
+
+pub fn tcp_connect(addr: String) -> Result<TcpStream, String> {
+    _net_tcp_connect(addr)
+}
+
+pub fn tcp_read(stream: TcpStream) -> Result<String, String> {
+    _net_tcp_read(stream)
+}
+
+pub fn tcp_read_line(stream: TcpStream) -> Result<String, String> {
+    _net_tcp_read_line(stream)
+}
+
+pub fn tcp_write(stream: TcpStream, data: String) -> Result<Int, String> {
+    _net_tcp_write(stream, data)
+}
+
+pub fn tcp_close(stream: TcpStream) {
+    _net_tcp_close(stream)
+}
+
+pub fn tcp_set_timeout(stream: TcpStream, ms: Int) {
+    _net_tcp_set_timeout(stream, ms)
+}
+
+pub fn resolve(hostname: String) -> Result<String, String> {
+    _net_resolve(hostname)
+}
