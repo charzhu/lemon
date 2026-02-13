@@ -20,7 +20,8 @@ A comprehensive guide to programming in Lemon.
 14. [Standard Library](#standard-library)
 15. [Graphics Programming](#graphics-programming)
 16. [Networking](#networking)
-17. [Best Practices](#best-practices)
+17. [Coming from Other Languages](#coming-from-other-languages)
+18. [Best Practices](#best-practices)
 
 ---
 
@@ -58,6 +59,25 @@ Run it:
 
 ```bash
 cargo run -- run hello.lemon
+```
+
+### Program Structure
+
+Every Lemon program needs a `main` function as its entry point. Top-level code outside functions is limited to constant declarations (`let`), function definitions (`fn`), struct/class/interface definitions, and module declarations.
+
+```lemon
+// Top-level: constants and functions
+let MAX_SIZE = 100;
+
+fn helper() {
+    println("I'm a helper");
+}
+
+fn main() {
+    // Program starts here
+    helper();
+    println("Max size is " + str(MAX_SIZE));
+}
 ```
 
 ---
@@ -112,13 +132,15 @@ Blocks are enclosed in curly braces and create new scopes:
 
 ### Primitive Types
 
-| Type | Description | Example |
+| Type | Description | Examples |
 |------|-------------|---------|
-| `Int` | 64-bit signed integer | `42`, `-17`, `0xFF` |
+| `Int` | 64-bit signed integer | `42`, `-17`, `0xFF`, `0b1010` |
 | `Float` | 64-bit floating point | `3.14`, `-0.5` |
 | `Bool` | Boolean | `true`, `false` |
 | `String` | UTF-8 string | `"Hello"` |
 | `()` | Unit type (void) | `()` |
+
+Integer literals support decimal, hexadecimal (`0x` prefix), and binary (`0b` prefix) notation. Underscores can be used as separators for readability: `1_000_000`, `0xFF_FF`.
 
 ### Compound Types
 
@@ -130,6 +152,8 @@ Blocks are enclosed in curly braces and create new scopes:
 | `Option<T>` | Some value or none | `Some(5)`, `None` |
 
 ### Type Annotations
+
+Type annotations are optional in most cases — the interpreter infers types at runtime. They are required for function parameters and useful for documentation:
 
 ```lemon
 let x: Int = 42;
@@ -146,29 +170,39 @@ fn add(a: Int, b: Int) -> Int {
 
 ## Variables
 
-### Declaration
+### Top-Level Constants
+
+Variables declared at the top level (outside functions) are constants. They must be initialized with literal values or simple expressions. They cannot be reassigned.
 
 ```lemon
-// Immutable by default
-let x = 10;
+let PI = 3.14159;
+let MAX_SIZE = 1000;
+let GREETING = "Hello";
 
-// Mutable variable
-let mut counter = 0;
-counter = counter + 1;
-
-// With type annotation
-let name: String = "Lemon";
+// Public constants (visible to importers)
+pub let VERSION = 1;
 ```
 
-### Constants
+> **Note:** Top-level `let` declarations cannot use function calls like `ui::rgb(255, 0, 0)`. Move those into a function body.
+
+### Function-Level Variables
+
+Inside functions, variables are declared with `let` and can be reassigned:
 
 ```lemon
-// Module-level constants
-pub let PI = 3.14159;
-pub let MAX_SIZE = 1000;
+fn main() {
+    let x = 10;
+    x = x + 1;       // Reassignment is allowed
+    println(x);       // 11
+
+    let name = "Lemon";
+    println(name);
+}
 ```
 
 ### Shadowing
+
+You can declare a new variable with the same name, which shadows the previous one:
 
 ```lemon
 let x = 5;
@@ -183,7 +217,7 @@ let x = "hello";    // Can even change type
 ### Arithmetic
 
 ```lemon
-let sum = a + b;        // Addition
+let sum = a + b;        // Addition (also string concatenation)
 let diff = a - b;       // Subtraction
 let prod = a * b;       // Multiplication
 let quot = a / b;       // Division
@@ -204,15 +238,28 @@ a >= b      // Greater than or equal
 ### Logical
 
 ```lemon
-a && b      // Logical AND
-a || b      // Logical OR
+a && b      // Logical AND (short-circuit)
+a || b      // Logical OR (short-circuit)
 !a          // Logical NOT
+```
+
+### Bitwise
+
+```lemon
+a & b       // Bitwise AND
+a | b       // Bitwise OR
+a ^ b       // Bitwise XOR
+a << n      // Left shift
+a >> n      // Right shift
 ```
 
 ### String Concatenation
 
+The `+` operator concatenates strings. Use `str()` to convert other types:
+
 ```lemon
 let greeting = "Hello, " + name + "!";
+let message = "Score: " + str(42);
 ```
 
 ---
@@ -229,8 +276,11 @@ if condition {
 } else {
     // fallback
 }
+```
 
-// If as expression
+`if` can also be used as an expression:
+
+```lemon
 let result = if x > 0 { "positive" } else { "non-positive" };
 ```
 
@@ -244,21 +294,43 @@ while i < 10 {
 }
 ```
 
-### For Loop
+### Loop (Infinite)
+
+`loop` creates an infinite loop. Use `break` to exit:
 
 ```lemon
-// Iterate over array
+let count = 0;
+loop {
+    count = count + 1;
+    if count >= 10 {
+        break;
+    }
+}
+println("Counted to " + str(count));
+```
+
+### For Loop
+
+Iterate over arrays:
+
+```lemon
+let items = ["apple", "banana", "cherry"];
 for item in items {
     println(item);
 }
+```
 
-// Iterate over range (if implemented)
-for i in 0..10 {
-    println(i);
+Iterate over characters in a string:
+
+```lemon
+for ch in "hello" {
+    println(ch);  // prints h, e, l, l, o on separate lines
 }
 ```
 
 ### Match Expression
+
+Pattern matching with `match`:
 
 ```lemon
 match value {
@@ -266,8 +338,11 @@ match value {
     1 => println("one"),
     n => println("other: " + str(n)),
 }
+```
 
-// Match with Result
+Match with `Result` and `Option`:
+
+```lemon
 match some_operation() {
     Ok(result) => {
         println("Success: " + str(result));
@@ -276,21 +351,32 @@ match some_operation() {
         println("Error: " + error);
     },
 }
+
+match find_something() {
+    Some(value) => println("Found: " + str(value)),
+    None => println("Not found"),
+}
 ```
 
 ### Break and Continue
 
+`break` exits the enclosing loop. `continue` skips to the next iteration:
+
 ```lemon
-while true {
-    if should_stop {
-        break;
+let i = 0;
+while i < 20 {
+    i = i + 1;
+    if i % 2 == 0 {
+        continue;    // Skip even numbers
     }
-    if should_skip {
-        continue;
+    if i > 15 {
+        break;       // Stop at 15
     }
-    // do work
+    println(i);      // Prints 1, 3, 5, 7, 9, 11, 13, 15
 }
 ```
+
+Both work in `while`, `loop`, and `for` loops.
 
 ---
 
@@ -316,26 +402,30 @@ fn main() {
 
 ### Return Values
 
+Functions return the last expression (without semicolon) implicitly, or use `return` for early exits:
+
 ```lemon
-// Explicit return
+// Implicit return (last expression)
+fn square(x: Int) -> Int {
+    x * x
+}
+
+// Explicit return for early exit
 fn abs(x: Int) -> Int {
     if x < 0 {
         return -x;
     }
-    return x;
+    x
 }
 
-// Implicit return (last expression without semicolon)
-fn square(x: Int) -> Int {
-    x * x
-}
-```
-
-### Multiple Parameters
-
-```lemon
-fn create_point(x: Int, y: Int, label: String) -> Point {
-    Point { x, y, label }
+// Return from nested control flow
+fn find_first_negative(numbers: [Int]) -> Option<Int> {
+    for n in numbers {
+        if n < 0 {
+            return Some(n);
+        }
+    }
+    None
 }
 ```
 
@@ -352,52 +442,78 @@ let sum = add(3, 4);     // 7
 let multiply: fn(Int, Int) -> Int = |a, b| a * b;
 ```
 
+Closures capture variables from their enclosing scope.
+
 ---
 
 ## Arrays and Tuples
 
 ### Arrays
 
+Arrays are ordered, mutable collections:
+
 ```lemon
-// Create array
+// Create
 let numbers = [1, 2, 3, 4, 5];
 
-// Access elements
+// Access by index (0-based)
 let first = numbers[0];
 let third = numbers[2];
 
-// Get length
+// Negative indexing (from the end)
+let last = numbers[-1];       // 5
+let second_last = numbers[-2]; // 4
+
+// Length
 let size = len(numbers);
 
-// Modify (if mutable)
-let mut items = [1, 2, 3];
-items[0] = 10;
+// Modify elements
+numbers[0] = 10;
 
-// Array methods
-items.push(4);           // Add to end
-let last = items.pop();  // Remove from end
+// Add and remove
+numbers.push(6);              // Add to end
+let popped = numbers.pop();   // Remove from end
 ```
 
 ### Tuples
 
+Tuples are fixed-size, ordered collections of potentially different types:
+
 ```lemon
-// Create tuple
+// Create
 let point = (10, 20);
 let person = ("Alice", 30, true);
 
 // Destructuring
 let (x, y) = point;
 let (name, age, active) = person;
+println(name + " is " + str(age));
+```
 
-// Access by index (via destructuring)
-let (first, second) = pair;
+Tuples are commonly used for returning multiple values from functions:
+
+```lemon
+fn min_max(arr: [Int]) -> (Int, Int) {
+    let lo = arr[0];
+    let hi = arr[0];
+    for v in arr {
+        if v < lo { lo = v; }
+        if v > hi { hi = v; }
+    }
+    (lo, hi)
+}
+
+fn main() {
+    let (lo, hi) = min_max([3, 1, 4, 1, 5, 9]);
+    println("Min: " + str(lo) + ", Max: " + str(hi));
+}
 ```
 
 ---
 
 ## Structs
 
-### Definition
+### Definition and Usage
 
 ```lemon
 struct Point {
@@ -418,7 +534,7 @@ struct Person {
 let origin = Point { x: 0, y: 0 };
 let p = Point { x: 10, y: 20 };
 
-// Shorthand when variable names match
+// Shorthand when variable names match field names
 let x = 5;
 let y = 10;
 let point = Point { x, y };
@@ -438,20 +554,23 @@ println("Point: (" + str(px) + ", " + str(py) + ")");
 
 ### Class Definition
 
+Classes combine data and behavior. Methods receive `this` (immutable) or `mut this` (mutable) as the first parameter:
+
 ```lemon
 class Counter {
     value: Int;
 
-    // Constructor
+    // Constructor — returns Self
     pub fn new() -> Self {
         Self { value: 0 }
     }
 
-    // Methods
+    // Mutable method — can modify fields
     pub fn increment(mut this) {
         this.value = this.value + 1;
     }
 
+    // Immutable method — read-only access
     pub fn get(this) -> Int {
         this.value
     }
@@ -477,6 +596,8 @@ fn main() {
 
 ### Static Members
 
+Static fields and methods belong to the class itself, not instances:
+
 ```lemon
 class Config {
     static instance_count: Int = 0;
@@ -494,6 +615,8 @@ class Config {
 ```
 
 ### Inheritance
+
+Use `extends` for class inheritance. Abstract classes define methods that subclasses must implement:
 
 ```lemon
 abstract class Shape {
@@ -520,15 +643,30 @@ class Rectangle extends Shape {
         this.width * this.height
     }
 }
+
+class Circle extends Shape {
+    radius: Int;
+
+    pub fn new(x: Int, y: Int, r: Int) -> Self {
+        Self { x, y, radius: r }
+    }
+
+    pub override fn area(this) -> Int {
+        // Approximation using integer math
+        3 * this.radius * this.radius
+    }
+}
 ```
 
 ### Visibility
 
+Fields and methods have three visibility levels:
+
 ```lemon
 class Example {
-    pub field: Int;           // Public
-    protected internal: Int;  // Protected (subclasses)
-    private_field: Int;       // Private (default)
+    pub field: Int;           // Public — accessible everywhere
+    protected internal: Int;  // Protected — accessible in subclasses
+    private_field: Int;       // Private — default, class only
 
     pub fn public_method(this) { }
     fn private_method(this) { }
@@ -540,6 +678,8 @@ class Example {
 ## Interfaces
 
 ### Definition
+
+Interfaces define a contract that classes must fulfill:
 
 ```lemon
 interface Drawable {
@@ -554,6 +694,8 @@ interface Clickable {
 
 ### Implementation
 
+A class can implement multiple interfaces:
+
 ```lemon
 class Button implements Drawable, Clickable {
     x: Int;
@@ -566,7 +708,6 @@ class Button implements Drawable, Clickable {
         Self { x, y, width: 100, height: 30, label }
     }
 
-    // Implement Drawable
     pub fn draw(this) {
         println("Drawing button: " + this.label);
     }
@@ -575,9 +716,24 @@ class Button implements Drawable, Clickable {
         (this.x, this.y, this.width, this.height)
     }
 
-    // Implement Clickable
     pub fn on_click(this, x: Int, y: Int) {
-        println("Button clicked at (" + str(x) + ", " + str(y) + ")");
+        println("Button '" + this.label + "' clicked");
+    }
+}
+```
+
+### Combining Inheritance and Interfaces
+
+```lemon
+class ImageButton extends Button implements Drawable {
+    image_path: String;
+
+    pub fn new(x: Int, y: Int, label: String, image: String) -> Self {
+        Self { x, y, width: 100, height: 30, label, image_path: image }
+    }
+
+    pub override fn draw(this) {
+        println("Drawing image button: " + this.image_path);
     }
 }
 ```
@@ -588,8 +744,9 @@ class Button implements Drawable, Clickable {
 
 ### Module Declaration
 
+Modules group related code together:
+
 ```lemon
-// In mymodule.lemon
 mod mymodule {
     pub fn public_function() {
         println("I'm public!");
@@ -608,11 +765,9 @@ mod mymodule {
 ### Using Modules
 
 ```lemon
-// Import entire module
 use lemon::ui;
 use lemon::net;
 
-// Use module items
 fn main() {
     let window = ui::create(800, 600, "My App");
     ui::clear(window, ui::BLACK);
@@ -624,16 +779,20 @@ fn main() {
 ```lemon
 use lemon::io;      // I/O operations
 use lemon::fs;      // File system
-use lemon::net;     // Networking
+use lemon::net;     // TCP networking
 use lemon::http;    // HTTP client/server
-use lemon::ui;      // Graphics
+use lemon::ui;      // 2D graphics
 ```
 
 ---
 
 ## Error Handling
 
+Lemon uses `Result<T, E>` and `Option<T>` types for error handling. There are no exceptions — errors are values that must be explicitly handled.
+
 ### Result Type
+
+`Result<T, E>` represents either success (`Ok(value)`) or failure (`Err(error)`):
 
 ```lemon
 fn divide(a: Int, b: Int) -> Result<Int, String> {
@@ -653,6 +812,8 @@ fn main() {
 ```
 
 ### Option Type
+
+`Option<T>` represents a value that may or may not exist:
 
 ```lemon
 fn find_item(items: [String], target: String) -> Option<Int> {
@@ -675,12 +836,14 @@ fn main() {
 }
 ```
 
-### Try Operator
+### Try Operator (`?`)
+
+The `?` operator propagates errors concisely. If the value is `Err`, the function returns that error immediately. If `Ok`, it unwraps the value:
 
 ```lemon
 fn read_and_parse(path: String) -> Result<Int, String> {
-    let content = fs::read_string(path)?;  // Propagate error if failed
-    let number = int(content)?;
+    let content = fs::read_string(path)?;  // Returns Err early if file read fails
+    let number = int(content)?;            // Returns Err early if parse fails
     Ok(number)
 }
 ```
@@ -696,6 +859,7 @@ fn read_and_parse(path: String) -> Result<Int, String> {
 println("Hello");           // Print with newline
 print("No newline");        // Print without newline
 eprintln("Error message");  // Print to stderr
+eprint("Error no newline"); // Print to stderr without newline
 
 // Input
 let name = input("Enter name: ");
@@ -708,38 +872,44 @@ let f = float("3.14");      // 3.14
 // Utility
 let length = len(array);    // Array/string length
 let t = type_of(value);     // Type name as string
-let r = random(1, 100);     // Random int in range
+let r = random(1, 100);     // Random int in [1, 100]
 ```
 
-### File System
+### File System (`lemon::fs`)
 
 ```lemon
 use lemon::fs;
 
-// Read file
-match fs::read_string("file.txt") {
+// Read and write files
+match fs::read_string("config.txt") {
     Ok(content) => println(content),
     Err(e) => println("Error: " + e),
 }
-
-// Write file
 fs::write_string("output.txt", "Hello, file!");
+fs::append("log.txt", "New log entry\n");
 
-// Check existence
+// Check paths
 if fs::exists("myfile.txt") {
     println("File exists!");
 }
+if fs::is_file("test.txt") { }
+if fs::is_dir("folder") { }
 
 // Directory operations
 fs::mkdir("new_folder");
 let files = fs::list_dir(".");
 
-// File info
-if fs::is_file("test.txt") { }
-if fs::is_dir("folder") { }
+// File operations
+fs::copy("src.txt", "dst.txt");
+fs::rename("old.txt", "new.txt");
+fs::remove("temp.txt");
+
+// Path utilities
+let cwd = fs::cwd();
+let abs = fs::absolute("relative/path");
 ```
 
-### Networking
+### Networking (`lemon::net`)
 
 ```lemon
 use lemon::net;
@@ -747,8 +917,10 @@ use lemon::net;
 // TCP Server
 match net::tcp_listen("127.0.0.1:8080") {
     Ok(listener) => {
+        println("Listening on port 8080");
         match net::tcp_accept(listener) {
             Ok(client) => {
+                net::tcp_set_timeout(client, 5000);  // 5 second timeout
                 let data = net::tcp_read(client);
                 net::tcp_write(client, "Response");
                 net::tcp_close(client);
@@ -764,13 +936,20 @@ match net::tcp_connect("127.0.0.1:8080") {
     Ok(conn) => {
         net::tcp_write(conn, "Hello server!");
         let response = net::tcp_read(conn);
+        println(response);
         net::tcp_close(conn);
     },
     Err(e) => println("Connect error: " + e),
 }
+
+// DNS resolution
+match net::resolve("example.com") {
+    Ok(ip) => println("IP: " + ip),
+    Err(e) => println("DNS error: " + e),
+}
 ```
 
-### HTTP
+### HTTP (`lemon::http`)
 
 ```lemon
 use lemon::http;
@@ -792,6 +971,8 @@ match http::post("http://example.com/api", "data") {
 
 ## Graphics Programming
 
+Lemon includes a built-in 2D graphics library for creating games and visualizations.
+
 ### Window Creation
 
 ```lemon
@@ -806,16 +987,10 @@ fn main() {
 
 fn game_loop(window: Window) {
     while ui::is_open(window) {
-        // Clear screen
         ui::clear(window, ui::BLACK);
-
-        // Draw stuff
-        // ...
-
-        // Update display
+        // ... draw things ...
         ui::update(window);
 
-        // Check for exit
         if ui::key_down(window, "escape") {
             break;
         }
@@ -826,7 +1001,7 @@ fn game_loop(window: Window) {
 ### Drawing Primitives
 
 ```lemon
-// Colors (predefined)
+// Predefined colors
 ui::BLACK       // 0x000000
 ui::WHITE       // 0xFFFFFF
 ui::RED         // 0xFF0000
@@ -836,12 +1011,13 @@ ui::YELLOW      // 0xFFFF00
 ui::CYAN        // 0x00FFFF
 ui::MAGENTA     // 0xFF00FF
 
-// Custom color
+// Custom color from RGB (0-255 each)
 let orange = ui::rgb(255, 165, 0);
+let dark_gray = ui::rgb(60, 60, 60);
 
-// Drawing
-ui::rect(window, x, y, width, height, color);   // Rectangle
-ui::circle(window, cx, cy, radius, color);       // Circle
+// Drawing functions
+ui::rect(window, x, y, width, height, color);   // Filled rectangle
+ui::circle(window, cx, cy, radius, color);       // Filled circle
 ui::line(window, x1, y1, x2, y2, color);         // Line
 ui::pixel(window, x, y, color);                   // Single pixel
 ```
@@ -849,29 +1025,237 @@ ui::pixel(window, x, y, color);                   // Single pixel
 ### Input Handling
 
 ```lemon
-// Keyboard
-if ui::key_down(window, "left") {
-    player_x = player_x - 5;
-}
-if ui::key_down(window, "right") {
-    player_x = player_x + 5;
-}
-if ui::key_down(window, "space") {
-    shoot();
-}
+// Keyboard — returns true while key is held down
+if ui::key_down(window, "left")   { player_x = player_x - 5; }
+if ui::key_down(window, "right")  { player_x = player_x + 5; }
+if ui::key_down(window, "up")     { player_y = player_y - 5; }
+if ui::key_down(window, "down")   { player_y = player_y + 5; }
+if ui::key_down(window, "space")  { shoot(); }
+if ui::key_down(window, "escape") { break; }
 
 // Available keys:
-// "escape", "space", "enter", "up", "down", "left", "right"
-// "a" through "z", "0" through "9"
+// "escape", "space", "enter", "tab"
+// "up", "down", "left", "right"
+// "a" through "z"
+// "0" through "9"
 
-// Mouse
+// Mouse position
 let (mx, my) = ui::mouse_pos(window);
 ```
 
 ### Game Loop Pattern
 
+The standard pattern for a Lemon game:
+
 ```lemon
 use lemon::ui;
+
+let SCREEN_W = 800;
+let SCREEN_H = 600;
+
+fn main() {
+    match ui::create(SCREEN_W, SCREEN_H, "My Game") {
+        Ok(window) => run(window),
+        Err(e) => println("Error: " + e),
+    }
+}
+
+fn run(window: Window) {
+    // All mutable game state lives here
+    let player_x = SCREEN_W / 2;
+    let player_y = SCREEN_H - 60;
+    let score = 0;
+
+    while ui::is_open(window) {
+        // 1. Handle input
+        if ui::key_down(window, "left")  { player_x = player_x - 5; }
+        if ui::key_down(window, "right") { player_x = player_x + 5; }
+        if ui::key_down(window, "escape") { break; }
+
+        // 2. Update game state
+        score = score + 1;
+
+        // 3. Render
+        ui::clear(window, ui::BLACK);
+        ui::rect(window, player_x, player_y, 50, 30, ui::GREEN);
+        ui::update(window);
+    }
+
+    println("Final score: " + str(score));
+}
+```
+
+> **Important:** All mutable state must be declared inside a function. Top-level `let` creates constants. Colors from `ui::rgb()` must also be created inside functions since they are function calls.
+
+### Collision Detection
+
+A common pattern for AABB (axis-aligned bounding box) collision:
+
+```lemon
+fn collides(ax: Int, ay: Int, aw: Int, ah: Int,
+            bx: Int, by: Int, bw: Int, bh: Int) -> Bool {
+    if ax + aw <= bx { return false; }
+    if ax >= bx + bw { return false; }
+    if ay + ah <= by { return false; }
+    if ay >= by + bh { return false; }
+    return true;
+}
+
+// Usage
+if collides(player_x, player_y, 40, 60, enemy_x, enemy_y, 40, 60) {
+    game_over = true;
+}
+```
+
+### Complete Example: Car Racing
+
+See `examples/car_racing.lemon` for a full game with:
+- 4-lane scrolling road with animated lane dividers
+- 4 obstacle cars with collision detection
+- Fuel pickup system with a HUD fuel bar
+- Speed control and score tracking
+- Game over and restart with Space
+
+```bash
+cargo run -- run examples/car_racing.lemon
+```
+
+See `examples/space_invaders.lemon` for another complete game with bullets, enemies, bombs, lives, and wave progression.
+
+---
+
+## Networking
+
+### TCP Echo Server
+
+A minimal server that echoes back whatever clients send:
+
+```lemon
+use lemon::net;
+
+fn main() {
+    match net::tcp_listen("127.0.0.1:9000") {
+        Ok(listener) => {
+            println("Echo server on port 9000");
+            loop {
+                match net::tcp_accept(listener) {
+                    Ok(client) => {
+                        let data = net::tcp_read(client);
+                        net::tcp_write(client, "Echo: " + data);
+                        net::tcp_close(client);
+                    },
+                    Err(e) => {
+                        println("Error: " + e);
+                        break;
+                    }
+                }
+            }
+        },
+        Err(e) => println("Failed to listen: " + e),
+    }
+}
+```
+
+### Simple HTTP Server
+
+```lemon
+use lemon::net;
+
+fn main() {
+    match net::tcp_listen("127.0.0.1:8080") {
+        Ok(server) => {
+            println("HTTP server on http://127.0.0.1:8080");
+            match net::tcp_accept(server) {
+                Ok(client) => {
+                    let request = net::tcp_read(client);
+                    let body = "<html><body><h1>Hello from Lemon!</h1></body></html>";
+                    let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + body;
+                    net::tcp_write(client, response);
+                    net::tcp_close(client);
+                },
+                Err(e) => println("Error: " + e),
+            }
+        },
+        Err(e) => println("Failed to start: " + e),
+    }
+}
+```
+
+---
+
+## Coming from Other Languages
+
+### From Rust
+
+Lemon borrows much of Rust's syntax but drops the complexity:
+
+| Rust | Lemon | Notes |
+|------|-------|-------|
+| `let mut x = 5;` | `let x = 5;` | Variables inside functions are always reassignable |
+| `fn foo(x: &str)` | `fn foo(x: String)` | No references or lifetimes |
+| `impl Trait for Type` | `class Type implements Trait` | Classes instead of impl blocks |
+| `struct` + `impl` | `class` | Data and methods together |
+| `match` with exhaustive check | `match` | Same syntax, familiar semantics |
+| `Result<T, E>`, `Option<T>` | Same | Identical error handling model |
+| `vec![1,2,3]` | `[1, 2, 3]` | Array literals directly |
+| `cargo build` | `cargo run -- run file.lemon` | Lemon is built with Cargo |
+
+### From Go
+
+| Go | Lemon | Notes |
+|----|-------|-------|
+| `x := 5` | `let x = 5;` | `let` keyword required |
+| `func foo()` | `fn foo()` | `fn` keyword |
+| `if err != nil` | `match result { Err(e) => ... }` | Result types instead of error returns |
+| Interfaces (implicit) | `implements` keyword | Explicit interface implementation |
+| No classes | `class` with inheritance | Full OOP support |
+| No generics (until 1.18) | Generics with `<T>` | Generic types supported |
+| Goroutines | Not yet | Concurrency is planned |
+| `fmt.Println()` | `println()` | Built-in, no import needed |
+
+### From Java
+
+| Java | Lemon | Notes |
+|------|-------|-------|
+| `int x = 5;` | `let x = 5;` | Type inference, no type keyword needed |
+| `try/catch` | `match` on `Result` | No exceptions |
+| `null` | `None` via `Option<T>` | Null-safe by design |
+| `class Foo extends Bar` | Same syntax | Familiar inheritance |
+| `interface` | Same keyword | Familiar interfaces |
+| `public/private` | `pub` / default private | Simpler visibility |
+| `System.out.println()` | `println()` | Built-in |
+| `new Foo()` | `new Foo()` | Same constructor syntax |
+| Verbose lambdas | `\|x\| x * 2` | Concise closures |
+
+### From Python
+
+| Python | Lemon | Notes |
+|--------|-------|-------|
+| Dynamic typing | Static typing | Types checked, but inferred |
+| `def foo():` | `fn foo() {` | Curly braces, not indentation |
+| `try/except` | `match` on `Result` | No exceptions |
+| `None` | `None` via `Option<T>` | Explicit optional values |
+| `class Foo:` | `class Foo {` | Similar but with typed fields |
+| `self` | `this` | Explicit receiver |
+| `import os` | `use lemon::fs;` | Module imports |
+| `lambda x: x*2` | `\|x\| x * 2` | More capable closures |
+| `list.append(x)` | `array.push(x)` | Different method name |
+| tkinter (separate) | `ui::*` built-in | Graphics included |
+
+---
+
+## Best Practices
+
+### Code Organization
+
+1. **Constants at the top** — Declare `let` constants at module level, mutable state inside functions
+2. **Small functions** — Break logic into focused helper functions
+3. **Separate concerns** — Use the `main` → `run_game(window)` pattern for graphics programs
+
+```lemon
+// Good: constants at top, logic in functions
+let SPEED = 5;
+let MAX_ENEMIES = 10;
 
 fn main() {
     match ui::create(800, 600, "Game") {
@@ -881,178 +1265,80 @@ fn main() {
 }
 
 fn run(window: Window) {
-    // Game state
     let player_x = 400;
-    let player_y = 500;
-    let score = 0;
-
-    while ui::is_open(window) {
-        // 1. Handle input
-        if ui::key_down(window, "left") {
-            player_x = player_x - 5;
-        }
-        if ui::key_down(window, "right") {
-            player_x = player_x + 5;
-        }
-
-        // 2. Update game state
-        // (move enemies, check collisions, etc.)
-
-        // 3. Render
-        ui::clear(window, ui::BLACK);
-        ui::rect(window, player_x, player_y, 50, 30, ui::GREEN);
-        ui::update(window);
-
-        // 4. Check exit
-        if ui::key_down(window, "escape") {
-            break;
-        }
-    }
-
-    println("Final score: " + str(score));
+    // ...
 }
 ```
-
----
-
-## Best Practices
-
-### Code Organization
-
-1. **One file per module** - Keep modules focused and cohesive
-2. **Use meaningful names** - Variables, functions, and types should be self-documenting
-3. **Keep functions small** - Each function should do one thing well
 
 ### Error Handling
 
-1. **Use Result for fallible operations** - Don't silently fail
-2. **Handle errors at appropriate levels** - Propagate when needed, handle when you can
-3. **Provide meaningful error messages**
+1. **Use `Result` for operations that can fail** — file I/O, networking, parsing
+2. **Use `?` to propagate errors** up the call stack
+3. **Handle errors at the right level** — propagate when the caller should decide, handle when you can recover
+4. **Provide context** in error messages
 
 ```lemon
-// Good
-fn read_config(path: String) -> Result<Config, String> {
+// Good: descriptive error handling
+fn load_config(path: String) -> Result<String, String> {
     match fs::read_string(path) {
-        Ok(content) => parse_config(content),
-        Err(e) => Err("Failed to read config file: " + e),
+        Ok(content) => Ok(content),
+        Err(e) => Err("Failed to load config '" + path + "': " + e),
     }
-}
-
-// Bad - ignores errors
-fn read_config_bad(path: String) -> Config {
-    // This might crash!
-    let content = fs::read_string(path);
-    parse_config(content)
 }
 ```
 
-### Performance Tips
+### Arrays as Data Stores
 
-1. **Avoid unnecessary allocations** - Reuse arrays when possible
-2. **Use appropriate data structures** - Arrays for ordered data, consider the access patterns
-3. **Profile before optimizing** - Don't guess where the bottleneck is
+Since Lemon doesn't have hashmaps, flat arrays with stride access are the standard pattern for structured collections:
+
+```lemon
+// Store enemies as [x, y, alive, x, y, alive, ...]
+let enemies = [];
+let col = 0;
+while col < 8 {
+    enemies.push(100 + col * 60);  // x
+    enemies.push(50);               // y
+    enemies.push(1);                // alive (1=yes, 0=no)
+    col = col + 1;
+}
+
+// Access enemy i
+let i = 0;
+while i < len(enemies) {
+    let ex = enemies[i];
+    let ey = enemies[i + 1];
+    let alive = enemies[i + 2];
+    if alive == 1 {
+        ui::rect(window, ex, ey, 40, 30, ui::RED);
+    }
+    i = i + 3;  // stride of 3
+}
+```
 
 ### Graphics Programming
 
-1. **Clear before drawing** - Always clear the screen at the start of each frame
-2. **Update once per frame** - Call `ui::update()` once at the end of your render loop
-3. **Use frame-based timing** - The window is limited to ~60fps by default
-
----
-
-## Example: Complete Game
-
-Here's a simplified version of Space Invaders demonstrating many concepts:
+1. **Clear before drawing** — always call `ui::clear()` at the start of each frame
+2. **Update once per frame** — call `ui::update()` once at the end of the render loop
+3. **Create colors once** — store `ui::rgb()` results in variables rather than calling every frame
+4. **Check keys after drawing** — check `ui::key_down()` for exit after `ui::update()` or at the start of the loop
 
 ```lemon
-use lemon::ui;
+fn run(window: Window) {
+    // Create colors once, not every frame
+    let bg_color = ui::rgb(34, 139, 34);
+    let player_color = ui::rgb(0, 120, 255);
 
-fn main() {
-    println("Space Invaders - Arrow keys to move, Space to shoot, ESC to quit");
-
-    match ui::create(800, 600, "Space Invaders") {
-        Ok(window) => run_game(window),
-        Err(e) => println("Error: " + e),
-    }
-}
-
-fn run_game(window: Window) {
-    let player_x = 370;
-    let bullets = [];
-    let enemies = [];
-    let score = 0;
-
-    // Create enemies
-    let row = 0;
-    while row < 3 {
-        let col = 0;
-        while col < 8 {
-            enemies.push(100 + col * 70);  // x
-            enemies.push(50 + row * 50);   // y
-            enemies.push(1);                // alive
-            col = col + 1;
-        }
-        row = row + 1;
-    }
+    let player_x = 400;
 
     while ui::is_open(window) {
-        // Input
-        if ui::key_down(window, "left") {
-            player_x = player_x - 5;
-            if player_x < 0 { player_x = 0; }
-        }
-        if ui::key_down(window, "right") {
-            player_x = player_x + 5;
-            if player_x > 740 { player_x = 740; }
-        }
-        if ui::key_down(window, "space") {
-            bullets.push(player_x + 25);
-            bullets.push(550);
-        }
-        if ui::key_down(window, "escape") {
-            break;
-        }
+        if ui::key_down(window, "escape") { break; }
+        if ui::key_down(window, "left")  { player_x = player_x - 5; }
+        if ui::key_down(window, "right") { player_x = player_x + 5; }
 
-        // Update bullets
-        let new_bullets = [];
-        let i = 0;
-        while i < len(bullets) {
-            let bx = bullets[i];
-            let by = bullets[i + 1] - 8;
-            if by > 0 {
-                new_bullets.push(bx);
-                new_bullets.push(by);
-            }
-            i = i + 2;
-        }
-        bullets = new_bullets;
-
-        // Render
-        ui::clear(window, ui::BLACK);
-
-        // Draw player
-        ui::rect(window, player_x, 560, 60, 20, ui::GREEN);
-
-        // Draw bullets
-        i = 0;
-        while i < len(bullets) {
-            ui::rect(window, bullets[i], bullets[i + 1], 4, 10, ui::YELLOW);
-            i = i + 2;
-        }
-
-        // Draw enemies
-        i = 0;
-        while i < len(enemies) {
-            if enemies[i + 2] == 1 {
-                ui::rect(window, enemies[i], enemies[i + 1], 40, 30, ui::RED);
-            }
-            i = i + 3;
-        }
-
+        ui::clear(window, bg_color);
+        ui::rect(window, player_x, 500, 40, 60, player_color);
         ui::update(window);
     }
-
-    println("Game Over! Score: " + str(score));
 }
 ```
 
@@ -1060,8 +1346,6 @@ fn run_game(window: Window) {
 
 ## Further Reading
 
-- Check the `examples/` directory for more sample programs
-- Read the source code in `lemon/` for standard library implementations
-- Explore `src/` to understand the language implementation
-
-Happy coding with Lemon! 🍋
+- Browse `examples/` for sample programs covering basics, OOP, networking, and games
+- Read the source in `lemon/` for standard library implementations
+- See [README.md](README.md) for the language comparison and rationale
